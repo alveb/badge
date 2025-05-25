@@ -16,20 +16,10 @@ body > div {
   grid-template-columns: repeat(3, auto);
   padding: 1rem;
 }
-.column {
-  text-align: left;
-  width: 35rem;
-}
-.display {
-  text-align: center;
-}
-.display > * {
-  text-align: left;
-}
-.display > pre {
-  display: inline-block;
-  margin: 0;
-}
+.column { text-align: left; width: 35rem; }
+.display { text-align: center; }
+.display > * { text-align: left; }
+.display > pre { display: inline-block; margin: 0; }
 #instruction-format {
   border-left: 1px solid;
   border-top: 1px solid;
@@ -41,12 +31,8 @@ body > div {
   border-right: 1px solid;
   text-align: center;
 }
-#instruction-format div:nth-child(11) {
-  grid-column: 2 / span 5;
-}
-#instruction-format div:nth-child(16) {
-  grid-column: 2 / span 6;
-}
+#instruction-format :nth-child(11) { grid-column: 2 / span 5; }
+#instruction-format :nth-child(16) { grid-column: 2 / span 6; }
 #instruction-table {
   column-gap: 1ex;
   display: inline-grid;
@@ -68,7 +54,7 @@ body > div { background-color: #aff; }
 <p>BadVM has a 16-bit stack-oriented architecture with an 8-bit
 byte code format. It has three control registers: a program
 counter (pc), a stack pointer (sp), and a frame pointer (fp), and
-two distinct memory regions: a 2 kB cartridge (cart), and a 1 kB
+two distinct memory regions: a 2 kB cartridge (cart), and a 1 kB
 working memory (memory).</p>
 
 <p>The cart resides in flash memory or on an external storage
@@ -76,25 +62,23 @@ device, and contains code, assets, and persistent variables, if
 the underlying storage medium supports such. Since BadVM has
 16-bit word size but 8-bit instruction size, there are two
 different views of the cart: viewed through the data channel it
-consists of 1024 words, while viewed through the code channel it
-consists of 2048 instructions. pc is initialized to zero, and
-regarded as pointing to the next instruction. Thus the program
+consists of 1 024 words, while viewed through the code channel it
+consists of 2 048 instructions. pc is initialized to zero, and
+regarded as pointing to the next instruction; thus the program
 begins execution from the first byte of the cart.</p>
 
-<p>The memory resides in SRAM, and is zero initialized, as is sp
-and fp</p>
-
-<p>pc is initialized to zero, and regarded as pointing to
-the next instruction. Thus the </p>
-<p>sp and fp</p>
+<p>The memory resides in SRAM, and is zero initialized, as are sp
+and fp. sp is regarded as pointing just beyond the end of the
+stack, and the stack grows downwards towards higher addresses, so
+the stacks tarts out empty and can potentially span the entire
+memory.</p>
 
 <h2>Byte code</h2>
-<p>There are two instruction formats, A and B,
-distinguished by the two least significant bits of the
-instruction. Type B is for loading immediate values; type
-A is for everything else. (You may notice type A
-instructions have a spare bit. Perfect for secret
-messages!)</p>
+<p>There are two instruction formats, A and B, distinguished by
+the two least significant bits of the instruction. Type B is for
+loading immediate values; type A is for everything else. (You may
+notice that type A instructions have a spare bit. Perfect for
+secret messages!)</p>
 <div class="display">
 <div id="instruction-format">
 <div></div>
@@ -107,7 +91,7 @@ messages!)</p>
 <p>Type A instructions are further divided into four
 groups depending on the two most significant bits of the
 opcode: control flow, arithmetic operations, logic
-operations and loads and stores.</p>
+operations, and loads and stores.</p>
 <div class="display">
 <div id="instruction-table">
 <div>Mnem.</div><div>ab</div><div>opcode</div>
@@ -204,44 +188,73 @@ not:  sp -= 1; sp[0] = ~sp[0];           sp += 1;
 xor:  sp -= 2; sp[0] = sp[0] ^ sp[1];    sp += 1;
 shl:  sp -= 2; sp[0] = sp[0] &lt;&lt; sp[1];   sp += 1;
 shr:  sp -= 2; sp[0] = sp[0] &gt;&gt; sp[1];   sp += 1;
-la:   sp -= 1; sp[0] = mem[sp[0]];       sp += 1;
-lr:   sp -= 1; sp[0] = mem[fp + sp[0]];  sp += 1;
+la:   sp -= 1; sp[0] = *sp[0];           sp += 1;
+lr:   sp -= 1; sp[0] = fp[sp[0]];        sp += 1;
 lc:   sp -= 1; sp[0] = cart[sp[0]];      sp += 1;
-sa:   sp -= 2; mem[sp[0]] = sp[1];
-sr:   sp -= 2; mem[fp + sp[0]] = sp[1];
+sa:   sp -= 2; *sp[0] = sp[1];
+sr:   sp -= 2; fp[sp[0]] = sp[1];
 sc:   sp -= 2; cart[sp[0]] = sp[1];
 lli:           sp[0][15:0] = imm;        sp += 1;
 lmi:  sp -= 1; sp[0][15:6] = imm;        sp += 1;
 lui:  sp -= 1; sp[0][15:12] = imm;       sp += 1;
 </pre>
 </div>
-<p>pc is incremented unless otherwise specified.</p>
+<p>A few notes are in order.</p>
+<ul>
+<li>pc is incremented unless otherwise specified.</li>
+<li>Words should generally be regarded as being signed. This
+applies in particular to mul, div, rem, less and shr.</li>
+<li>Some operations are undefined. [TBD]</li>
+<li>lli, lmi, and lui preform sign extension, which means that
+a single lli cover the range [-32, 32), an lli followed by an lmi
+cover the range [-2 048, 2 048) (including all addresses), and
+finally an lli followed by an lmi followed by an lui cover the
+whole range [-65 536, 65 536).
+</li>
+</ul>
+
 <h2>Calling convention</h2>
-TBD
+[TBD]
 
 <h2>System functions</h2>
+[Order not final.]
 <ol start="0">
-<li>halt</li>
-<li>draw</li>
-<li>write</li>
-<li>down</li>
-<li>press</li>
-<li>send</li>
-<li>recv</li>
-<li>rand</li>
-<li>next</li>
+<li>halt() exits the program.</li>
+<li>draw(fb) draws the frame buffer fb on the display. fb is
+assumed to be a 10-by-9 array in row-major order, with a 3-bit
+colour depth. (If you think that’s a lot of wasted bits, you’d
+be right.)</li>
+<li>write(b, n, i) scrolls a text of n words from buffer b across
+the display. i is a flag indicating whether the message should be
+interruptible by a key press.</li>
+<li>press() returns a bit vector indicating which keys were
+pressed during the previous frame. Keys correspond to bits
+through their labels and indices, so that the key labelled ‘0’
+correspond to bit 0 (the least significant bit), and the key
+labelled ‘b’ correspond to bit 11 (obviously).</li>
+<li>down() returns a bit vector indicating which keys were down
+during the previous frame. The same correspondence applies.</li>
+<li>send(b, n) sends n words from buffer b though the
+speaker.</li>
+<li>recv(b, n) receives up to n words into buffer b through the
+microphone. It return the actual number of words received.</li>
+<li>rand(n) returns a random number in the range [0, n)</li>
+<li>next(dt) sleeps until the next frame, dt cs (centiseconds)
+after the start of the current frame, returning immediately if
+that moment has already passed.</li>
 </ol>
 </div>
+
 <div class="column">
 <h1>BadgeScript (BS)</h1>
+<h2>Overview</h2>
 <p>BS is a state-of-the-art structured high-level
 programming language.</p>
 
 <h2>Lexical structure</h2>
-<p>TBD</p>
+<p>[TBD]</p>
 
 <h2>Syntactic structure</h2>
-<p>BS is a block oriented language</p>
 <code><span class="meta">{</span>foo<span class="meta">} = (</span>foo<span class="meta">(</span>, foo<span class="meta">)*)?</span></code>
 <div class="display">
 <pre>
@@ -274,10 +287,10 @@ exp   <span class="meta">←</span> num
 </div>
 <div class="column">
 <h1>Badge Integrated Develpment Environment (BadIDE)</h2>
-<p>BadIDE consists of three parts: an editor, a compiler
-and a simulator, where the simulator in turn consists of
-a virtual machine, a display, a keypad, and two monitors,
-one for the cart and one for the memory.</p>
+<p>BadIDE consists of three parts: an editor, a compiler and a
+simulator, where the simulator in turn consists of a virtual
+machine, a display, a keypad, and two monitors, one for the cart
+and one for the memory.</p>
 </div>
 </div>
 </body>

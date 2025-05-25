@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Manual</title>
+<style>
+/* Typography */
+h1 { font-size: x-large; }
+h2 { font-size: large; }
+
+/* Layout */
+html, body { margin: 0; padding: 0; }
+body { text-align: center; }
+body > div {
+  display: inline-grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, auto);
+  padding: 1rem;
+}
+.column {
+  text-align: left;
+  width: 35rem;
+}
+.display {
+  text-align: center;
+}
+.display > * {
+  text-align: left;
+}
+.display > pre {
+  display: inline-block;
+  margin: 0;
+}
+#instruction-format {
+  border-left: 1px solid;
+  border-top: 1px solid;
+  display: inline-grid;
+  grid-template-columns: repeat(9, 1em);
+}
+#instruction-format > div {
+  border-bottom: 1px solid;
+  border-right: 1px solid;
+  text-align: center;
+}
+#instruction-format div:nth-child(11) {
+  grid-column: 2 / span 5;
+}
+#instruction-format div:nth-child(16) {
+  grid-column: 2 / span 6;
+}
+#instruction-table {
+  column-gap: 1ex;
+  display: inline-grid;
+  grid-template-columns: repeat(4, auto);
+}
+
+/* Colour */
+.column { background-color: #fff; }
+body > div { background-color: #aff; }
+.display > pre { background-color: #ffe; }
+.meta { color: red; }
+</style>
+</head>
+<body>
+<div>
+<div class="column">
+<h1>Badge Virtual Machine (BadVM)</h1>
+<h2>Overview</h2>
+<p>BadVM has a 16-bit stack-oriented architecture with an 8-bit
+byte code format. It has three control registers: a program
+counter (pc), a stack pointer (sp), and a frame pointer (fp), and
+two distinct memory regions: a 2 kB cartridge (cart), and a 1 kB
+working memory (memory).</p>
+
+<p>The cart resides in flash memory or on an external storage
+device, and contains code, assets, and persistent variables, if
+the underlying storage medium supports such. Since BadVM has
+16-bit word size but 8-bit instruction size, there are two
+different views of the cart: viewed through the data channel it
+consists of 1024 words, while viewed through the code channel it
+consists of 2048 instructions. pc is initialized to zero, and
+regarded as pointing to the next instruction. Thus the program
+begins execution from the first byte of the cart.</p>
+
+<p>The memory resides in SRAM, and is zero initialized, as is sp
+and fp</p>
+
+<p>pc is initialized to zero, and regarded as pointing to
+the next instruction. Thus the </p>
+<p>sp and fp</p>
+
+<h2>Byte code</h2>
+<p>There are two instruction formats, A and B,
+distinguished by the two least significant bits of the
+instruction. Type B is for loading immediate values; type
+A is for everything else. (You may notice type A
+instructions have a spare bit. Perfect for secret
+messages!)</p>
+<div class="display">
+<div id="instruction-format">
+<div></div>
+<div>7</div><div>6</div><div>5</div><div>4</div>
+<div>3</div><div>2</div><div>1</div><div>0</div>
+<div>A</div><div>opcode</div><div></div><div>a</div><div>b</div>
+<div>B</div><div>imm</div><div>a</div><div>b</div>
+</div>
+</div>
+<p>Type A instructions are further divided into four
+groups depending on the two most significant bits of the
+opcode: control flow, arithmetic operations, logic
+operations and loads and stores.</p>
+<div class="display">
+<div id="instruction-table">
+<div>Mnem.</div><div>ab</div><div>opcode</div>
+<div>Long name</div>
+<!-- Control flow -->
+<div>nop</div><div>00</div><div>00000</div>
+<div>No operation</div>
+<div>jump</div><div>00</div><div>00001</div>
+<div>Jump</div>
+<div>br</div><div>00</div><div>00010</div>
+<div>Branch</div>
+<div>call</div><div>00</div><div>00011</div>
+<div>Call subroutine</div>
+<div>ret</div><div>00</div><div>00100</div>
+<div>Return from subroutine</div>
+<div>allo</div><div>00</div><div>00101</div>
+<div>(De)allocate</div>
+<div>sys</div><div>00</div><div>00110</div>
+<div>System call</div>
+<!-- Arithmetic operations -->
+<div>add</div><div>00</div><div>01000</div>
+<div>Add</div>
+<div>sub</div><div>00</div><div>01001</div>
+<div>Subtract</div>
+<div>neg</div><div>00</div><div>01010</div>
+<div>Negate</div>
+<div>mul</div><div>00</div><div>01011</div>
+<div>Multiply</div>
+<div>div</div><div>00</div><div>01100</div>
+<div>Divide</div>
+<div>rem</div><div>00</div><div>01101</div>
+<div>Reminder</div>
+<div>eq</div><div>00</div><div>01110</div>
+<div>Equal</div>
+<div>less</div><div>00</div><div>01111</div>
+<div>Less than</div>
+<!-- Logic operations -->
+<div>and</div><div>00</div><div>10000</div>
+<div>Bitwise and</div>
+<div>or</div><div>00</div><div>10001</div>
+<div>Bitwise or</div>
+<div>not</div><div>00</div><div>10010</div>
+<div>Bitwise not</div>
+<div>xor</div><div>00</div><div>10011</div>
+<div>Bitwise exclusive or</div>
+<div>shl</div><div>00</div><div>10100</div>
+<div>Shift left logical</div>
+<div>shr</div><div>00</div><div>10101</div>
+<div>Shift right arithmetic</div>
+<!-- Loads and stores -->
+<div>la</div><div>00</div><div>11000</div>
+<div>Load absolute</div>
+<div>lr</div><div>00</div><div>11001</div>
+<div>Load relative</div>
+<div>lc</div><div>00</div><div>11010</div>
+<div>Load cart</div>
+<div>sa</div><div>00</div><div>11011</div>
+<div>Store absolute</div>
+<div>sr</div><div>00</div><div>11100</div>
+<div>Store relative</div>
+<div>sc</div><div>00</div><div>11001</div>
+<div>Store cart</div>
+<!-- Immediate values -->
+<div>lli</div><div>01</div><div>n/a</div>
+<div>Load lower immediate</div>
+<div>lmi</div><div>10</div><div>n/a</div>
+<div>Load middle immediate</div>
+<div>lui</div><div>11</div><div>n/a</div>
+<div>Load upper immediate</div>
+</div>
+</div>
+<p>The semantics of the various instructions is specified by the
+following pseudo C code.</p>
+<div class="display">
+<pre>
+nop:  ;
+jump: sp -= 1; pc = sp[0];
+br:   sp -= 2; if (sp[0]) pc = sp[1];
+call: sp[0] = pc; sp[1] = fp; fp = sp + 1; sp += 2;
+ret:  sp -= 2; fp = sp[1]; pc = sp[0];
+allo: sp -= 1; sp += sp[0];
+sys:  sp -= 1; sys[sp[0]]();
+add:  sp -= 2; sp[0] = sp[0] + sp[1];    sp += 1;
+sub:  sp -= 2; sp[0] = sp[0] - sp[1];    sp += 1;
+neg:  sp -= 1; sp[0] = -sp[0];           sp += 1;
+mul:  sp -= 2; sp[0] = sp[0] * sp[1];    sp += 1;
+div:  sp -= 2; sp[0] = sp[0] / sp[1];    sp += 1;
+rem:  sp -= 2; sp[0] = sp[0] % sp[1];    sp += 1;
+eq:   sp -= 2; sp[0] = (sp[0] == sp[1]); sp += 1;
+less: sp -= 2; sp[0] = (sp[0] &lt; sp[1]);  sp += 1;
+and:  sp -= 2; sp[0] = sp[0] &amp; sp[1];    sp += 1;
+or:   sp -= 2; sp[0] = sp[0] | sp[1];    sp += 1;
+not:  sp -= 1; sp[0] = ~sp[0];           sp += 1;
+xor:  sp -= 2; sp[0] = sp[0] ^ sp[1];    sp += 1;
+shl:  sp -= 2; sp[0] = sp[0] &lt;&lt; sp[1];   sp += 1;
+shr:  sp -= 2; sp[0] = sp[0] &gt;&gt; sp[1];   sp += 1;
+la:   sp -= 1; sp[0] = mem[sp[0]];       sp += 1;
+lr:   sp -= 1; sp[0] = mem[fp + sp[0]];  sp += 1;
+lc:   sp -= 1; sp[0] = cart[sp[0]];      sp += 1;
+sa:   sp -= 2; mem[sp[0]] = sp[1];
+sr:   sp -= 2; mem[fp + sp[0]] = sp[1];
+sc:   sp -= 2; cart[sp[0]] = sp[1];
+lli:           sp[0][15:0] = imm;        sp += 1;
+lmi:  sp -= 1; sp[0][15:6] = imm;        sp += 1;
+lui:  sp -= 1; sp[0][15:12] = imm;       sp += 1;
+</pre>
+</div>
+<p>pc is incremented unless otherwise specified.</p>
+<h2>Calling convention</h2>
+TBD
+
+<h2>System functions</h2>
+<ol start="0">
+<li>halt</li>
+<li>draw</li>
+<li>write</li>
+<li>down</li>
+<li>press</li>
+<li>send</li>
+<li>recv</li>
+<li>rand</li>
+<li>next</li>
+</ol>
+</div>
+<div class="column">
+<h1>BadgeScript (BS)</h1>
+<p>BS is a state-of-the-art structured high-level
+programming language.</p>
+
+<h2>Lexical structure</h2>
+<p>TBD</p>
+
+<h2>Syntactic structure</h2>
+<p>BS is a block oriented language</p>
+<code><span class="meta">{</span>foo<span class="meta">} = (</span>foo<span class="meta">(</span>, foo<span class="meta">)*)?</span></code>
+<div class="display">
+<pre>
+prog  <span class="meta">←</span> block
+block <span class="meta">←</span> dec<span class="meta">*</span> state<span class="meta">*</span>
+dec   <span class="meta">←</span> byte id <span class="meta">{</span>num <span class="meta">|</span> str<span class="meta">}</span> end
+      <span class="meta">|</span> word id <span class="meta">{</span>num<span class="meta">}</span> end
+      <span class="meta">|</span> var id
+      <span class="meta">|</span> arr id[<span class="meta">{</span>exp<span class="meta">}</span>]
+      <span class="meta">|</span> proc id(<span class="meta">{</span>exp<span class="meta">}</span>) block end
+      <span class="meta">|</span> fun id ← id(<span class="meta">{</span>exp<span class="meta">}</span>) block end
+state <span class="meta">←</span> id ← exp
+      <span class="meta">|</span> id[<span class="meta">{</span>exp<span class="meta">}</span>] ← exp
+      <span class="meta">|</span> id(<span class="meta">{</span>exp<span class="meta">}</span>)
+      <span class="meta">|</span> if exp block <span class="meta">(</span>elif exp block<span class="meta">)*</span>
+        <span class="meta">(</span>else block<span class="meta">)?</span> end
+      <span class="meta">|</span> while exp block end
+      <span class="meta">|</span> for id exp block end
+      <span class="meta">|</span> break
+      <span class="meta">|</span> cont
+      <span class="meta">|</span> ret
+exp   <span class="meta">←</span> num
+      <span class="meta">|</span> id
+      <span class="meta">|</span> op exp
+      <span class="meta">|</span> exp op exp
+      <span class="meta">|</span> id[<span class="meta">{</span>exp<span class="meta">}</span>]
+      <span class="meta">|</span> id(<span class="meta">{</span>exp<span class="meta">}</span>)
+</pre>
+</div>
+</div>
+<div class="column">
+<h1>Badge Integrated Develpment Environment (BadIDE)</h2>
+<p>BadIDE consists of three parts: an editor, a compiler
+and a simulator, where the simulator in turn consists of
+a virtual machine, a display, a keypad, and two monitors,
+one for the cart and one for the memory.</p>
+</div>
+</div>
+</body>
+</html>

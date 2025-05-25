@@ -170,7 +170,8 @@ following pseudo C code.</p>
 nop:  ;
 jump: sp -= 1; pc = sp[0];
 br:   sp -= 2; if (sp[0]) pc = sp[1];
-call: sp[0] = pc; sp[1] = fp; fp = sp + 1; sp += 2;
+call: sp -= 1; swap(sp, &pc);
+               sp[1] = fp; fp = &sp[1];  sp += 2;
 ret:  sp -= 2; fp = sp[1]; pc = sp[0];
 allo: sp -= 1; sp += sp[0];
 sys:  sp -= 1; sys[sp[0]]();

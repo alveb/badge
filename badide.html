@@ -187,11 +187,11 @@ body { background-color: #ddd; }
   </div>
   <div id="cart-panel" class="panel">
     <div class=toolbar>
-      <input id="cart-byte-addr" size="4" value="1024" readonly>
-      <input id="cart-byte-value" size="6" value="-32768" readonly>
-      <input id="cart-word-addr" size="4" value="2048" readonly>
-      <input id="cart-word-value" size="4" value="-128" readonly>
-      <input id="cart-byte-inst" size="6" value="lui -32" readonly>
+      <input id="cart-word-addr" size="4" readonly>
+      <input id="cart-word-value" size="6" readonly>
+      <input id="cart-byte-addr" size="4" readonly>
+      <input id="cart-byte-value" size="3" readonly>
+      <input id="cart-byte-inst" size="6" readonly>
       <button id="save">Save</button>
       <button id="open">Open</button>
     </div>
@@ -428,8 +428,7 @@ ed.addEventListener('keydown', (e) => {
 
 let src = ed.value
 let tok = []
-let node = []
-let root;
+let root
 
 const keywords = [
   'arr',
@@ -485,10 +484,10 @@ function scan() {
       if ('0123456789'.includes(src[i])) {
         do { i++ } while ('0123456789'.includes(src[i]))
         tok[t].type = 'num'
-        tok[t].value = Number(src.substring(t.start, i))
+        tok[t].value = Number(src.substring(tok[t].start, i))
       } else if (abc.includes(src[i])) {
         do { i++ } while (abc.includes(src[i]))
-        let w = src.substring(t.start, i).toLowerCase()
+        let w = src.substring(tok[t].start, i).toLowerCase()
         if (keywords.includes(w)) {
           tok[t].type = w
         } else {
@@ -511,12 +510,10 @@ function scan() {
   tok.push({ type: 'end', start: i, end: i })
 }
 
-  // function error(msg) {
-  // }
   // function block(n) {
   //   for (;;) {
   //     if (match('byte')) {
-  //       let u = newNode('byte')
+  //       let u = node('byte')
   //     }
   //   }
   //   while (['arr', 'const', 'fun', 'proc', 'var'].includes(u[i])) {
@@ -545,18 +542,21 @@ function scan() {
   // function list(foo) {
   //   let l = []
   //   if (match(foo)) {
-  //     l.push(newNode())
+  //     l.push(node())
   //   }
   //   while (match(foo)) {
-  //     l.push(newNode())
+  //     l.push(node())
   //   }
   //   return l
   // }
 function parse() {
   let i = 0
-  function error(msg) {
-    message(msg)
-    throw new Error()
+  class ParseError extends Error {
+    constructor(msg, i, j) {
+      super(msg)
+      this.start = i
+      this.end = j
+    }
   }
   function match(t) {
     if (tok[i].type == t) { i++; return true }
@@ -567,13 +567,139 @@ function parse() {
   }
   function expect(t) {
     if (!match(t)) {
-      highlightTok(i - 1)
-      error('Expected ' + t)
+      highlightTok(i)
+      message('Error: Expected ' + t)
+      gtfo()
+    }
+    return value()
+  }
+  function abstractNode(t, c = []) {
+    return {
+      type: t,
+      child: c,
     }
   }
-  function newNode(t) {
-    node.push({ type: t, value: value(), start: i - 1, end: i })
-    return node.length - 1
+  function node(t, c = []) {
+    return {
+      type: t,
+      value: value(),
+      child: c,
+      start: i - 1,
+      end: i,
+    }
+  }
+  function lit() {
+    expect('num')
+    return node('lit')
+  }
+  function arg() {
+    expect('id')
+    return node('arg')
+  }
+  function prog() {
+    let u = block()
+    expect('end')
+    return u
+  }
+  function block() {
+    let u = abstractNode('block')
+    u.dec = []
+    for (;;) {
+      if (match('var')) {
+        let v = node('var')
+        v.name = expect('id')
+        u.dec.push(v)
+        continue
+      }
+      if (match('arr')) {
+        let v = node('arr')
+        v.name = expect('id')
+        expect('[')
+        v.shape = list(lit, ']')
+        u.dec.push(v)
+      }
+      if (match('proc')) {
+        let v = node('proc')
+        v.name = expect('id')
+        v.arg = list(arg, ')')
+        v.child.push(block())
+        expect('end')
+        u.dec.push(v)
+        continue
+      }
+      if (match('fun')) {
+        let v = node('fun')
+        v.ret = expect('id')
+        expect('←')
+        v.name = expect('id')
+        expect('(')
+        v.arg = list(arg, ')')
+        v.child.push(block())
+        expect('end')
+        u.dec.push(v)
+        continue
+      }
+      break
+    }
+    for (;;) {
+      if (match('id')) {
+        let v = node('ref')
+        if (match('[')) {
+          v = node('ind', [v, list(exp, ']')])
+        } else if (match('(')) {
+          u.child.push(node('call', [v, list(exp, ')')]))
+          continue
+        }
+        expect('←')
+        u.child.push(node('ass', [v, exp()]))
+        continue
+      }
+      if (match('if')) {
+        let v = node('if')
+        v.cond = [exp()]
+        v.child.push(block())
+        while (match('elif')) {
+          v.cond.push(exp())
+          v.child.push(block())
+        }
+        if (match('else')) {
+          v.child.push(block())
+        }
+        expect('end')
+        u.child.push(v)
+        continue
+      }
+      if (match('while')) {
+        v = node('while')
+        v.cond = [exp()]
+        v.child.push(block())
+        expect('end')
+        u.child.push(v)
+        continue
+      }
+      if (match('for')) {
+        v = node('for')
+        v.var = expect('id')
+        v.child.push(block)
+        expect('end')
+        u.child.push(v)
+        continue
+      }
+      if (match('break')) {
+        u.child.push(node('break'))
+        continue
+      }
+      if (match('cont')) {
+        u.child.push(node('cont'))
+        continue
+      }
+      if (match('ret')) {
+        u.child.push(node('ret'))
+        continue
+      }
+      break
+    }
+    return u
   }
   function exp() {
     const binop = '+-×÷|&∨~«»<≤=≥>≠'
@@ -599,34 +725,34 @@ function parse() {
     let and = [] /* operand stack */
     function shift() {
       let u = tor.pop()
-      node[u].child = []
+      u.child = []
       let v = and.pop()
-      if (node[u].type != 'unop') {
-        node[u].child.push(and.pop())
+      if (u.type != 'unop') {
+        u.child.push(and.pop())
       }
-      node[u].child.push(v)
+      u.child.push(v)
       and.push(u)
     }
     function push(u) {
-      // just push unop or index
-      if (node[u].type != 'binop') {
+      /* just push unop or ind */
+      if (u.type != 'binop') {
         tor.push(u)
         return
       }
       loop: while (tor.length > 0) {
         let v = tor.at(-1)
-        if (node[v].type != 'binop') {
+        if (v.type != 'binop') {
           shift()
           continue
         }
-        let i = binop.indexOf(node[v].value)
-        let j = binop.indexOf(node[u].value)
+        let i = binop.indexOf(v.value)
+        let j = binop.indexOf(u.value)
         switch (prec[i][j]) {
         case -1:
           shift()
           continue
         case  0:
-          highlightRange(node[v].start, node[u].end)
+          highlightRange(v.start, u.end)
           message('Error: Ambiguous expression')
           gtfo()
         case +1:
@@ -639,43 +765,49 @@ function parse() {
       while (match('op')) {
         if (!'-~'.includes(value())) {
           highlightTok(i - 1)
-          error('Not a prefix operator')
+          message('Error: Not prefix operator')
+          gtfo()
         }
-        push(newNode('unop'))
+        push(node('unop'))
       }
       if (match('(')) {
         and.push(exp())
         expect(')')
       } else if (match('num')) {
-        and.push(newNode('num'))
+        and.push(node('lit'))
       } else if (match('id')) {
-        and.push(newNode('ref'))
+        and.push(node('ref'))
       } else {
-        console.log(tok[i].type)
-        error('Expected (, id, or num')
+        message('Error: Expected (, id, or num')
+        highlightTok(i)
+        gtfo()
       }
       for (;;) {
         if (match('(')) {
-          newNode('ind')
-          and.push(exp())
-          expect(')')
+          push(node('call'))
+          and.push(list(exp, ')'))
           continue
         } else if (match('[')) {
-          newNode('call')
-          and.push(exp())
-          expect(']')
+          push(node('ind'))
+          and.push(list(exp, ']'))
           continue
         }
         break
       }
       if (!match('op')) break
-      push(newNode('binop'))
+      push(node('binop'))
     }
     while (tor.length > 0) shift()
     return and.pop()
   }
-  root = exp()
-  console.log(root)
+  function list(type, end) {
+    let u = node('list')
+    if (match(end)) return u
+    do { u.child.push(type()) } while (match(','))
+    expect(end)
+    return u
+  }
+  root = prog()
 }
 
 const inst = [
@@ -692,7 +824,7 @@ function decode(c) {
     return [inst[(c & 0x3) - 1], c >> 2]
   } else {
     let o = c >> 3
-    return [inst[o - 3 - (o > 6) - 2 * (o > 21)]]
+    return [inst[o + 3 - (o > 6) - 2 * (o > 21)]]
   }
 }
 
@@ -718,10 +850,10 @@ function codegen() {
       console.assert(v >= -32768 && v < 32768)
       codeView[i++] = encode('lli', v & 0x3f)
       v >>= 6
-      if (v == 0 || v == -1) break
+      if (v == -1 || v == 0) break
       codeView[i++] = encode('lmi', v & 0x3f)
       v >>= 6
-      if (v == 0 || v == -1) break
+      if (v == -1 || v == 0) break
       codeView[i++] = encode('lui', v & 0x3f)
       break
     default:
@@ -730,15 +862,13 @@ function codegen() {
     }
   }
   function exp(u) {
-    switch (node[u].type) {
+    switch (u.type) {
     case 'num':
-      console.log('bar')
-      emit('imm', node[u].value)
+      emit('imm', u.value)
       break
     case 'unop':
-      console.log('foo')
-      exp(node[u].child[0])
-      emit({'-': 'neg', '~': 'not'}[node[u].value])
+      exp(u.child[0])
+      emit({'-': 'neg', '~': 'not'}[u.value])
       break
     }
   }
@@ -755,8 +885,9 @@ function compile() {
     node = []
     scan()
     parse()
+    console.dir(root)
     lookup()
-    gencode()
+    codegen()
     fixup()
     message('Ok')
     updateCart()

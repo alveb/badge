@@ -510,55 +510,9 @@ function scan() {
   tok.push({ type: 'end', start: i, end: i })
 }
 
-  // function block(n) {
-  //   for (;;) {
-  //     if (match('byte')) {
-  //       let u = node('byte')
-  //     }
-  //   }
-  //   while (['arr', 'const', 'fun', 'proc', 'var'].includes(u[i])) {
-  //   }
-  // }
-  // function dec() {
-  // }
-  // function state() {
-  //   if (u[i].type == 'id') {
-  //     if (u[i + 1].type == '←') {
-  //       n.type = 'assign'
-  //     }
-  //     else if (/* ( */)
-  //     else {
-  //       error()
-  //     }
-  //   }
-  // }
-  // function expectVal(v, m) {
-  //   if (!v.includes(tok[i].value)) {
-  //     message(`Error: ${m}`)
-  //     highlightTok(i)
-  //     throw new Error(m)
-  //   }
-  // }
-  // function list(foo) {
-  //   let l = []
-  //   if (match(foo)) {
-  //     l.push(node())
-  //   }
-  //   while (match(foo)) {
-  //     l.push(node())
-  //   }
-  //   return l
-  // }
 function parse() {
   let i = 0
-  class ParseError extends Error {
-    constructor(msg, i, j) {
-      super(msg)
-      this.start = i
-      this.end = j
-    }
-  }
-  function match(t) {
+  function match() {
     if (tok[i].type == t) { i++; return true }
     return false
   }

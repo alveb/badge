@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>BadIDE</title>
+<style>
+/*
+* {
+  font: 16px monospace;
+}
+*/
+#header {
+  font-size: xx-large;
+  font-style: oblique;
+}
+button {
+  border: 2px outset #ddd;
+  border-style: outset;
+  background-color: #eee;
+}
+button:hover {
+  background-color: #ddd;
+}
+button.active {
+  background-color: #ccc;
+  border-style: inset;
+}
+input {
+  /* font: inherit; */
+  font: 100% monospace;
+  vertical-align: baseline;
+}
+/*
+button {
+  font: inherit;
+}
+*/
+select {
+  font: inherit;
+}
+
+/* Layout */
+html, body { margin: 0; padding: 0; }
+body { text-align: center; }
+#container {
+  /*
+  width: max-content;
+  */
+  /*
+  grid-template:
+    "simulator editor cart" auto
+    "memory editor cart" 1fr
+    / repeat(3, auto);
+  */
+  display: inline-grid;
+  gap: 1rem;
+  grid-template-areas: "sim ed cart" "mem ed cart";
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  padding: 1rem;
+}
+#simulator-panel { grid-area: sim; }
+#editor-panel { grid-area: ed; }
+#mem-panel { grid-area: mem; }
+#cart-panel { grid-area: cart; }
+/*
+#cart-panel .toolbar {
+  display: grid;
+  grid-template-columns: repeat(5, auto) 1fr;
+}
+*/
+.panel {
+  display: flex;
+  /*
+  align-items: center;
+  */
+  flex-direction: column;
+  gap: 10px;
+}
+.toolbar {
+  /* display: flex; */
+}
+#editor {
+  height: 100%;
+  /*
+  box-sizing: border-box;
+  */
+}
+#display {
+  height: 200px;
+  width: 180px;
+}
+#keypad {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  height: 200px;
+  width: 300px;
+}
+.monitor {
+  display: grid;
+  font-family: monospace;
+}
+#mem-monitor {
+  grid-template-columns: repeat(16, 1fr);
+}
+#mem-monitor span:hover {
+  background-color: #3dd;
+}
+#cart-monitor {
+  grid-template-columns: repeat(16, auto);
+}
+#cart-monitor span:hover {
+  background-color: #3dd;
+}
+#cart-monitor span span:hover {
+  background-color: #4ff;
+}
+#cart-panel .toolbar button {
+  float: right;
+}
+
+/* Colour */
+body { background-color: #ddd; }
+#keypad { background-color: #aff; }
+#display { background-color: #aaf; }
+#container { background-color: #afa; }
+.panel:nth-child(1) { background-color: #faf; }
+.panel:nth-child(2) { background-color: #ffa; }
+.panel:nth-child(3) { background-color: #faa; }
+.panel:nth-child(4) { background-color: #aff; }
+
+#keypad :nth-child( 1) { grid-row: 4; grid-column: 2; }
+#keypad :nth-child( 2) { grid-row: 1; grid-column: 1; }
+#keypad :nth-child( 3) { grid-row: 1; grid-column: 2; }
+#keypad :nth-child( 4) { grid-row: 1; grid-column: 3; }
+#keypad :nth-child( 5) { grid-row: 2; grid-column: 1; }
+#keypad :nth-child( 6) { grid-row: 2; grid-column: 2; }
+#keypad :nth-child( 7) { grid-row: 2; grid-column: 3; }
+#keypad :nth-child( 8) { grid-row: 3; grid-column: 1; }
+#keypad :nth-child( 9) { grid-row: 3; grid-column: 2; }
+#keypad :nth-child(10) { grid-row: 3; grid-column: 3; }
+#keypad :nth-child(11) { grid-row: 3; grid-column: 5; }
+#keypad :nth-child(12) { grid-row: 2; grid-column: 6; }
+</style>
+</head>
+<body>
+<div id="container">
+  <div id="simulator-panel" class="panel">
+    <div id="header">BadIDE</div>
+    <div class="toolbar">
+      <button id="reset">Reset</button>
+      <button id="run">Run</button>
+      <button id="step">Step</button>
+    </div>
+    <div class="message-area"></div>
+    <canvas id="display" height="200" width="180"></canvas>
+    <div id="keypad">
+      <button>0</button>
+      <button>1</button>
+      <button>2 ↑</button>
+      <button>3</button>
+      <button>4 ←</button>
+      <button>5</button>
+      <button>→ 6</button>
+      <button>7</button>
+      <button>8 ↓</button>
+      <button>9</button>
+      <button>A</button>
+      <button>B</button>
+    </div>
+  </div>
+  <div id="editor-panel" class="panel">
+    <div class="toolbar">
+      <input></input>
+      <select>
+        <option>Snake</option>
+        <option>Tetris</option>
+      </select>
+      <button id="save">Save</button>
+      <button id="open">Open</button>
+      <button id="compile" onclick="compile()">Compile</button>
+    </div>
+    <div class="message-area"></div>
+    <textarea id="editor" cols="65" spellcheck="false">
+    </textarea>
+  </div>
+  <div id="cart-panel" class="panel">
+    <div class=toolbar>
+      <input id="cart-byte-addr" size="4" value="1024" readonly>
+      <input id="cart-byte-value" size="6" value="-32768" readonly>
+      <input id="cart-word-addr" size="4" value="2048" readonly>
+      <input id="cart-word-value" size="4" value="-128" readonly>
+      <input id="cart-byte-inst" size="6" value="lui -32" readonly>
+      <button id="save">Save</button>
+      <button id="open">Open</button>
+    </div>
+    <div id="cart-monitor" class="monitor">
+    </div>
+  </div>
+  <div id="mem-panel" class="panel">
+    <div class=toolbar>
+      Dec: <input id="" size="10" value="123" readonly>
+      <input id="" value="bar" readonly>
+    </div>
+    <div id="mem-monitor" class="monitor">
+    </div>
+  </div>
+</div>
+<script>
+class Gtfo extends Error {}
+function gtfo() { throw new Gtfo() }
+
+/* Widgets */
+const display = document.getElementById('display')
+const ed   = document.getElementById('editor')
+const kp   = document.getElementById('keypad')
+let cartMonitor = document.getElementById('cart-monitor')
+let memMonitor = document.getElementById('mem-monitor')
+
+/* VM state */
+const button      = Array.from({ length: 12 }, () => 0)
+const pressed     = Array.from({ length: 12 }, () => 0)
+const down        = Array.from({ length: 12 }, () => 0)
+const frameBuffer = Array.from({ length: 10 }, () =>
+  Array.from({ length: 9 }, () => 0)
+)
+let pc, sp, fp
+
+let mem = new ArrayBuffer(1024)
+let cart = new ArrayBuffer(2048)
+let codeView = new Uint8Array(cart)
+let cartView = new Int16Array(cart)
+let memView = new Int16Array(mem)
+
+/* Display */
+function updateDisplay() {
+  const context = display.getContext('2d')
+  const palette = ['#200', '#400', '#900', '#d00']
+  for (let i = 0; i < 10; i++) {
+    for (let j = 0; j < 9; j++) {
+      context.fillStyle = palette[frameBuffer[i][j]]
+      context.fillRect(20 * i, 20 * j, 20, 20)
+    }
+  }
+}
+
+/* Memory */
+function initMem() {
+  for (let i = 0; i < 512; i++) {
+    memMonitor.appendChild(document.createElement('span'))
+  }
+}
+function updateMem() {
+  for (let i = 0; i < 512; i++) {
+    memMonitor.children[i].innerHTML =
+      memView[i].toString(16).padStart(4, '0')
+  }
+}
+initMem()
+updateMem()
+
+/* Cart */
+function initCart() {
+  for (let i = 0; i < 1024; i++) {
+    cartMonitor.appendChild(document.createElement('span'))
+    for (let j = 0; j < 2; j++) {
+      cartMonitor.children[i].appendChild(
+        document.createElement('span')
+      )
+    }
+  }
+}
+function updateCart() {
+  for (let i = 0; i < 1024; i++) {
+    for (let j = 0; j < 2; j++) {
+      cartMonitor.children[i].children[j].innerHTML =
+        codeView[2 * i + j].toString(16).padStart(2, '0')
+    }
+  }
+}
+initCart()
+updateCart()
+function nodeIndex(n) {
+  return Array.from(n.parentNode.children).indexOf(n)
+}
+cartMonitor.addEventListener('mouseover', (e) => {
+  const i = nodeIndex(e.target.parentNode)
+  const j = nodeIndex(e.target)
+  document.getElementById('cart-word-addr').value = i
+  document.getElementById('cart-word-value').value = cartView[i]
+  document.getElementById('cart-byte-addr').value = 2 * i + j
+  document.getElementById('cart-byte-value').value = codeView[2 * i + j]
+  let [m, v] = decode(codeView[2 * i + j])
+  if (v) {
+    document.getElementById('cart-byte-inst').value = m + ' ' + v
+  } else {
+    document.getElementById('cart-byte-inst').value = m
+  }
+})
+
+/* Keypad */
+function press(i) {
+  console.log(i + " pressed")
+  kp.children[i].classList.add('active')
+}
+function release(i) {
+  console.log(i + " released")
+  kp.children[i].classList.remove('active')
+}
+for (let i = 0; i < 12; i++) {
+  let n = kp.children[i]
+  n.addEventListener('mousedown', () => { press(i) })
+  n.addEventListener('mouseup', () => { release(i) })
+}
+document.addEventListener('keydown', (e) => {
+  if (e.repeat) return
+  if (document.activeElement != ed) {
+    switch (e.key) {
+    case '1':           press( 1); break
+    case '2': case 'w': press( 2); break
+    case '3':           press( 3); break
+    case '4': case 'a': press( 4); break
+    case '5':           press( 5); break
+    case '6': case 'd': press( 6); break
+    case '7':           press( 7); break
+    case '8': case 's': press( 8); break
+    case '9':           press( 9); break
+    case '0':           press( 0); break
+    case '-': case 'j': press(10); break
+    case '=': case 'i': press(11); break
+    }
+  }
+})
+document.addEventListener('keyup', (e) => {
+  if (document.activeElement != ed) {
+    switch (e.key) {
+    case '1':           release( 1); break
+    case '2': case 'w': release( 2); break
+    case '3':           release( 3); break
+    case '4': case 'a': release( 4); break
+    case '5':           release( 5); break
+    case '6': case 'd': release( 6); break
+    case '7':           release( 7); break
+    case '8': case 's': release( 8); break
+    case '9':           release( 9); break
+    case '0':           release( 0); break
+    case '-': case 'j': release(10); break
+    case '=': case 'i': release(11); break
+    }
+  }
+})
+
+/* Editor toolbar */
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey) {
+    switch (e.key) {
+    case 's':     break
+    case 'o':     break
+    case 'Enter': e.preventDefault(); compile(); break
+    }
+  }
+})
+
+/* Fancy characters */
+let editorState = 11
+ed.addEventListener('mousedown', () => { editorState = 11 })
+ed.addEventListener('keydown', (e) => {
+  const input = ['Shift', '%', '*', '-', '/', '<', '=', '>', '\\']
+  const plain = ['%', '*', '/=', '<-', '<<', '<=', '>=', '>>', '\\/']
+  const fancy = ['÷', '×', '≠', '←', '«', '≤', '≥', '»', '∨']
+  const trans = [
+    [13,  0, 0, 1, 13, 9, 10, 13, 11, 12],
+    [13,  1, 0, 1, 13, 9, 10, 13, 11, 12],
+    [13,  2, 0, 1, 13, 9, 10, 13, 11, 12],
+    [13,  3, 0, 1, 13, 9, 10, 13, 11, 12],
+    [13,  4, 0, 1, 13, 9, 10, 13, 11, 12],
+    [13,  5, 0, 1, 13, 9, 10, 13, 11, 12],
+    [13,  6, 0, 1, 13, 9, 10, 13, 11, 12],
+    [13,  7, 0, 1, 13, 9, 10, 13, 11, 12],
+    [13,  8, 0, 1, 13, 9, 10, 13, 11, 12],
+    [13,  9, 0, 1, 13, 9, 10,  2, 11, 12],
+    [13, 10, 0, 1,  3, 9,  4,  5, 11, 12],
+    [13, 11, 0, 1, 13, 9, 10,  6,  7, 12],
+    [13, 12, 0, 1, 13, 8, 10, 13, 11, 12],
+    [13, 13, 0, 1, 13, 9, 10, 13, 11, 12],
+  ]
+  const oldState = editorState
+  const newState = trans[oldState][input.indexOf(e.key) + 1]
+  let nDelete, insertion
+  if (e.key == 'Backspace' && oldState < 9) {
+    nDelete = 1
+    insertion = plain[oldState]
+  } else if (newState < 9) {
+    nDelete = (newState > 1)
+    insertion = fancy[newState]
+  }
+  if (insertion) {
+    e.preventDefault()
+    ed.setRangeText(
+      insertion,
+      ed.selectionStart - nDelete,
+      ed.selectionEnd,
+    )
+    ed.selectionStart += insertion.length
+    ed.selectionEnd = ed.selectionStart
+  }
+  editorState = newState
+})
+
+/* Autoindent */
+ed.addEventListener('keydown', (e) => {
+  if (!e.ctrlKey && e.key == 'Enter') {
+    e.preventDefault()
+    let n = 0
+    loop: for (let i = ed.selectionStart - 1; i >= 0; i--) {
+      switch (ed.value[i]) {
+      case '\n': break loop
+      case ' ': n++; break
+      default: n = 0; break
+      }
+    }
+    ed.setRangeText('\n' + ' '.repeat(n))
+    ed.selectionStart += 1 + n
+    ed.selectionEnd = ed.selectionStart
+  }
+})
+
+let src = ed.value
+let tok = []
+let node = []
+let root;
+
+const keywords = [
+  'arr',
+  'var',
+  'data',
+  'if',
+  'elif',
+  'else',
+  'proc',
+  'fun',
+  'for',
+  'while',
+  'end',
+  'ret',
+  'fun',
+  'not',
+  'or',
+  'and',
+]
+
+function message(m) {
+  document.querySelector('#editor-panel .message-area').innerHTML = m
+}
+
+function highlightRange(i, j) {
+  ed.focus()
+  ed.selectionStart = i
+  ed.selectionEnd = j
+}
+
+function highlightChar(i) {
+  highlightRange(i, i + 1)
+}
+
+function highlightTok(t) {
+  highlightRange(tok[t].start, tok[t].end)
+}
+
+function scan() {
+  const abc = (
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ' +
+    'abcdefghijklmnopqrstuvwxyzåäö'
+  )
+  let i = 0
+  while (i < src.length) {
+    if ('\t\n '.includes(src[i])) {
+      i++
+    } else if (src[i] == ';') {
+      do { i++ } while (src[i] != '\n')
+    } else {
+      tok.push({ start: i })
+      let t = tok.length - 1
+      if ('0123456789'.includes(src[i])) {
+        do { i++ } while ('0123456789'.includes(src[i]))
+        tok[t].type = 'num'
+        tok[t].value = Number(src.substring(t.start, i))
+      } else if (abc.includes(src[i])) {
+        do { i++ } while (abc.includes(src[i]))
+        let w = src.substring(t.start, i).toLowerCase()
+        if (keywords.includes(w)) {
+          tok[t].type = w
+        } else {
+          tok[t].type = 'id'
+          tok[t].value = w
+        }
+      } else if ('+-×÷<≤=≥>≠~|&«»'.includes(src[i])) {
+        tok[t].type = 'op'
+        tok[t].value = src[i++]
+      } else if ('←(),[]'.includes(src[i])) {
+        tok[t].type = src[i++]
+      } else {
+        message('Error: Illegal character')
+        highlightChar(i)
+        gtfo()
+      }
+      tok[t].end = i
+    }
+  }
+  tok.push({ type: 'end', start: i, end: i })
+}
+
+  // function error(msg) {
+  // }
+  // function block(n) {
+  //   for (;;) {
+  //     if (match('byte')) {
+  //       let u = newNode('byte')
+  //     }
+  //   }
+  //   while (['arr', 'const', 'fun', 'proc', 'var'].includes(u[i])) {
+  //   }
+  // }
+  // function dec() {
+  // }
+  // function state() {
+  //   if (u[i].type == 'id') {
+  //     if (u[i + 1].type == '←') {
+  //       n.type = 'assign'
+  //     }
+  //     else if (/* ( */)
+  //     else {
+  //       error()
+  //     }
+  //   }
+  // }
+  // function expectVal(v, m) {
+  //   if (!v.includes(tok[i].value)) {
+  //     message(`Error: ${m}`)
+  //     highlightTok(i)
+  //     throw new Error(m)
+  //   }
+  // }
+  // function list(foo) {
+  //   let l = []
+  //   if (match(foo)) {
+  //     l.push(newNode())
+  //   }
+  //   while (match(foo)) {
+  //     l.push(newNode())
+  //   }
+  //   return l
+  // }
+function parse() {
+  let i = 0
+  function error(msg) {
+    message(msg)
+    throw new Error()
+  }
+  function match(t) {
+    if (tok[i].type == t) { i++; return true }
+    return false
+  }
+  function value() {
+    return tok[i - 1].value
+  }
+  function expect(t) {
+    if (!match(t)) {
+      highlightTok(i - 1)
+      error('Expected ' + t)
+    }
+  }
+  function newNode(t) {
+    node.push({ type: t, value: value(), start: i - 1, end: i })
+    return node.length - 1
+  }
+  function exp() {
+    const binop = '+-×÷|&∨~«»<≤=≥>≠'
+    const prec = [
+[ -1, -1, -1, -1, 0,  0,  0, 0,  0,  0, -1, -1, -1, -1, -1, -1],
+[ -1, -1, -1, -1, 0,  0,  0, 0,  0,  0, -1, -1, -1, -1, -1, -1],
+[ -1, -1, -1, -1, 0,  0,  0, 0,  0,  0, -1, -1, -1, -1, -1, -1],
+[ -1, -1, -1, -1, 0,  0,  0, 0,  0,  0, -1, -1, -1, -1, -1, -1],
+[  0,  0,  0,  0, 0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0],
+[  0,  0,  0,  0, 0, -1, -1, 0,  0,  0,  0,  0,  0,  0,  0,  0],
+[  0,  0,  0,  0, 0, +1, -1, 0,  0,  0,  0,  0,  0,  0,  0,  0],
+[  0,  0,  0,  0, 0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0],
+[  0,  0,  0,  0, 0,  0,  0, 0, -1, -1,  0,  0,  0,  0,  0,  0],
+[  0,  0,  0,  0, 0,  0,  0, 0, -1, -1,  0,  0,  0,  0,  0,  0],
+[ +1, +1, +1, +1, 0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0],
+[ +1, +1, +1, +1, 0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0],
+[ +1, +1, +1, +1, 0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0],
+[ +1, +1, +1, +1, 0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0],
+[ +1, +1, +1, +1, 0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0],
+[ +1, +1, +1, +1, 0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0,  0],
+    ]
+    let tor = [] /* operator stack */
+    let and = [] /* operand stack */
+    function shift() {
+      let u = tor.pop()
+      node[u].child = []
+      let v = and.pop()
+      if (node[u].type != 'unop') {
+        node[u].child.push(and.pop())
+      }
+      node[u].child.push(v)
+      and.push(u)
+    }
+    function push(u) {
+      // just push unop or index
+      if (node[u].type != 'binop') {
+        tor.push(u)
+        return
+      }
+      loop: while (tor.length > 0) {
+        let v = tor.at(-1)
+        if (node[v].type != 'binop') {
+          shift()
+          continue
+        }
+        let i = binop.indexOf(node[v].value)
+        let j = binop.indexOf(node[u].value)
+        switch (prec[i][j]) {
+        case -1:
+          shift()
+          continue
+        case  0:
+          highlightRange(node[v].start, node[u].end)
+          message('Error: Ambiguous expression')
+          gtfo()
+        case +1:
+          break loop
+        }
+      }
+      tor.push(u)
+    }
+    for (;;) {
+      while (match('op')) {
+        if (!'-~'.includes(value())) {
+          highlightTok(i - 1)
+          error('Not a prefix operator')
+        }
+        push(newNode('unop'))
+      }
+      if (match('(')) {
+        and.push(exp())
+        expect(')')
+      } else if (match('num')) {
+        and.push(newNode('num'))
+      } else if (match('id')) {
+        and.push(newNode('ref'))
+      } else {
+        console.log(tok[i].type)
+        error('Expected (, id, or num')
+      }
+      for (;;) {
+        if (match('(')) {
+          newNode('ind')
+          and.push(exp())
+          expect(')')
+          continue
+        } else if (match('[')) {
+          newNode('call')
+          and.push(exp())
+          expect(']')
+          continue
+        }
+        break
+      }
+      if (!match('op')) break
+      push(newNode('binop'))
+    }
+    while (tor.length > 0) shift()
+    return and.pop()
+  }
+  root = exp()
+  console.log(root)
+}
+
+const inst = [
+  'lli', 'lmi', 'lui',
+  'nop', 'jump', 'br', 'call', 'ret', 'allo', 'sys',
+  'add', 'sub', 'neg', 'mul',  'div', 'rem',  'eq',  'less',
+  'and', 'or',  'not', 'xor',  'shl', 'shr',
+  'la',  'lr',  'lc',  'sa',   'sr',  'sc',
+]
+
+function decode(c) {
+  console.assert(c < 256)
+  if (c & 0x3) {
+    return [inst[(c & 0x3) - 1], c >> 2]
+  } else {
+    let o = c >> 3
+    return [inst[o - 3 - (o > 6) - 2 * (o > 21)]]
+  }
+}
+
+function encode(m, v) {
+  console.assert(v < 64)
+  let i = inst.indexOf(m)
+  if (i < 4) {
+    return (v << 2) | (i + 1)
+  } else {
+    return (i + 3 + (i > 6) + 2 * (i > 20)) << 3
+  }
+}
+
+function lookup() {
+}
+
+function codegen() {
+  let i = 0
+  function emit(m, v) {
+    /* Pseudo-instructions */
+    switch (m) {
+    case 'imm':
+      console.assert(v >= -32768 && v < 32768)
+      codeView[i++] = encode('lli', v & 0x3f)
+      v >>= 6
+      if (v == 0 || v == -1) break
+      codeView[i++] = encode('lmi', v & 0x3f)
+      v >>= 6
+      if (v == 0 || v == -1) break
+      codeView[i++] = encode('lui', v & 0x3f)
+      break
+    default:
+      codeView[i++] = encode(m)
+      break
+    }
+  }
+  function exp(u) {
+    switch (node[u].type) {
+    case 'num':
+      console.log('bar')
+      emit('imm', node[u].value)
+      break
+    case 'unop':
+      console.log('foo')
+      exp(node[u].child[0])
+      emit({'-': 'neg', '~': 'not'}[node[u].value])
+      break
+    }
+  }
+  exp(root)
+}
+
+function fixup() {
+}
+
+function compile() {
+  try {
+    src = ed.value
+    tok = []
+    node = []
+    scan()
+    parse()
+    lookup()
+    gencode()
+    fixup()
+    message('Ok')
+    updateCart()
+  } catch (e) {
+    if (e instanceof Gtfo) return
+    throw e
+  }
+}
+compile()
+    </script>
+  </body>
+</html>

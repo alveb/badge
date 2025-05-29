@@ -7,7 +7,6 @@ static short dt;
 static short a;
 static short b;
 static short dv;
-static short fb[10][9];
 static short ft;
 static short grid[10][9];
 static short head[2];
@@ -16,15 +15,19 @@ static short weight;
 
 static void clear(void) {
   for_(i, 10) for_(j, 9) {
-    fb[i][j] = 0;
+    draw(i, j, 0);
     grid[i][j] = 0;
   }
 }
 
 static void flash(void) {
-  for_(i, 6) {
+  for_(i, 3) {
     for_(j, 10) for_(k, 9) {
-      fb[j][k] = 3 - fb[j][k];
+      draw(j, k, 4 * (grid[j][k] == 0));
+    }
+    next(20);
+    for_(j, 10) for_(k, 9) {
+      draw(j, k, 4 * (grid[j][k] != 0));
     }
     next(20);
   }
@@ -35,9 +38,9 @@ static void init(void) {
   dt = 20;
   a = 0;
   b = 0;
-  fb[4][4] = 4;
-  fb[5][4] = 4;
-  fb[6][4] = 4;
+  draw(4, 4, 4);
+  draw(5, 4, 4);
+  draw(6, 4, 4);
   ft = 3;
   grid[6][4] = 3;
   grid[7][4] = 2;
@@ -51,35 +54,28 @@ static void init(void) {
 static void loop(void) {
   for (;;) {
     for_(i, 10) for_(j, 9) {
-      if (grid[i][j] > 0 && grid[i][j] < 255) {
+      if (grid[i][j] > 0) {
         grid[i][j]--;
         if (!grid[i][j]) {
           len--;
-          fb[i][j] = 0;
+          draw(i, j, 0);
         }
       }
     }
-    dv = down();
     if (dir == 2 || dir == 8) {
-      switch (dv & ((1 << 4) | (1 << 6))) {
-      case 1 << 4: dir = 4; break;
-      case 1 << 6: dir = 6; break;
-      }
+      if (held(4) && !held(6)) dir = 4;
+      if (held(6) && !held(4)) dir = 6;
     } else {
-      switch (dv & ((1 << 2) | (1 << 8))) {
-      case 1 << 2: dir = 2; break;
-      case 1 << 8: dir = 8; break;
-      }
+      if (held(2) && !held(8)) dir = 2;
+      if (held(8) && !held(2)) dir = 8;
     }
-    switch (dir) {
-    case 2: head[0]--; break;
-    case 4: head[1]--; break;
-    case 6: head[1]++; break;
-    case 8: head[0]++; break;
-    }
+    if      (dir == 2) head[0]--;
+    else if (dir == 4) head[1]--;
+    else if (dir == 6) head[1]++;
+    else if (dir == 8) head[0]++;
     if (head[0] < 0 || head[0] >= 10) return;
     if (head[1] < 0 || head[1] >= 9)  return;
-    if (grid[head[0]][head[1]] == 255) {
+    if (grid[head[0]][head[1]] == -1) {
       weight++;
       if (!b--) {
         b = ++a;
@@ -90,7 +86,7 @@ static void loop(void) {
       return;
     }
     grid[head[0]][head[1]] = weight;
-    fb[head[0]][head[1]] = 4;
+    draw(head[0], head[1], 4);
     len++;
     if (ft) {
       ft--;
@@ -104,8 +100,8 @@ static void loop(void) {
           i++;
           n--;
         }
-        grid[0][i] = 255;
-        fb[0][i] = 7;
+        grid[0][i] = -1;
+        draw(i / 9, i % 9, 7);
       }
     }
     next(dt);
@@ -115,12 +111,10 @@ static void loop(void) {
 void run(void) {
   for (;;) {
     init();
-    draw(&fb);
     next(dt);
     loop();
     printf("score: %d\n", weight - 3);
     flash();
-    draw(0);
     clear();
   }
 }

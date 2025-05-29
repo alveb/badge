@@ -13,7 +13,7 @@
 static short bv; /* button vector */
 static short pv; /* press vector */
 static short hv; /* held vector */
-static short (*fb)[10][9]; /* frame buffer */
+static short fb[9][10]; /* frame buffer */
 static long fs; /* frame start */
 
 /* X stuff */
@@ -48,10 +48,10 @@ static void initpal(void)
 
 static void updisp(void)
 {
-  for (int i = 0; i < 10; i++) {
-    for (int j = 0; j < 9; j++) {
-      XSetForeground(disp, gc, pal[fb ? (*fb)[i][j] : 0]);
-      XFillRectangle(disp, win, gc, 40 * j, 40 * i, 40, 40);
+  for (int i = 0; i < 9; i++) {
+    for (int j = 0; j < 10; j++) {
+      XSetForeground(disp, gc, pal[fb[i][j]]);
+      XFillRectangle(disp, win, gc, 40 * i, 40 * j, 40, 40);
     }
   }
   XFlush(disp);
@@ -178,6 +178,6 @@ short rand_(short n) {
   return (rand() & 0xffff) % n;
 }
 
-void draw(short (*p)[10][9]) { fb = p; }
-short press(void) { return pv; }
-short down(void) { return hv; }
+void draw(short i, short j, short s) { fb[j][i] = s & 0x7; }
+short press(short b) { return pv >> b & 0x1; }
+short held(short b) { return hv >> b & 0x1; }

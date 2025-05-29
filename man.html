@@ -6,6 +6,7 @@
 /* Typography */
 h1 { font-size: x-large; }
 h2 { font-size: large; }
+code, pre { font-size: 1rem; }
 
 /* Layout */
 html, body { margin: 0; padding: 0; }
@@ -24,7 +25,7 @@ body > div {
   border-left: 1px solid;
   border-top: 1px solid;
   display: inline-grid;
-  grid-template-columns: repeat(9, 1em);
+  grid-template-columns: repeat(9, 1rem);
 }
 #instruction-format > div {
   border-bottom: 1px solid;
@@ -32,11 +33,18 @@ body > div {
   text-align: center;
 }
 #instruction-format :nth-child(11) { grid-column: 2 / span 5; }
-#instruction-format :nth-child(16) { grid-column: 2 / span 6; }
+#instruction-format :nth-child(13) { grid-column: 8 / span 2; }
+#instruction-format :nth-child(15) { grid-column: 2 / span 6; }
+#instruction-format :nth-child(16) { grid-column: 8 / span 2; }
 #instruction-table {
-  column-gap: 1ex;
+  column-gap: 1rem;
   display: inline-grid;
   grid-template-columns: repeat(4, auto);
+}
+#operator-table {
+  column-gap: 1rem;
+  display: inline-grid;
+  grid-template-columns: repeat(2, auto);
 }
 
 /* Colour */
@@ -53,9 +61,10 @@ body > div { background-color: #aff; }
 <h2>Overview</h2>
 <p>BadVM has a 16-bit stack-oriented architecture with an 8-bit
 byte code format. It has three control registers: a program
-counter (pc), a stack pointer (sp), and a frame pointer (fp), and
-two distinct memory regions: a 2 kB cartridge (cart), and a 1 kB
-working memory (memory).</p>
+counter (<code>pc</code>), a stack pointer (<code>sp</code>), and
+a frame pointer (<code>fp</code>), and two distinct memory
+regions: a 2 kB cartridge (cart), and a 1 kB working memory
+(memory).</p>
 
 <p>The cart resides in flash memory or on an external storage
 device, and contains code, assets, and persistent variables, if
@@ -75,20 +84,20 @@ memory.</p>
 
 <h2>Byte code</h2>
 <p>There are two instruction formats, A and B, distinguished by
-the two least significant bits of the instruction. Type B is for
-loading immediate values; type A is for everything else. (You may
-notice that type A instructions have a spare bit. Perfect for
+the two least significant bits of the instruction. Type A are for
+loading immediate values; type B is for everything else. (You may
+notice that type B instructions have a spare bit. Perfect for
 secret messages!)</p>
 <div class="display">
 <div id="instruction-format">
 <div></div>
 <div>7</div><div>6</div><div>5</div><div>4</div>
 <div>3</div><div>2</div><div>1</div><div>0</div>
-<div>A</div><div>opcode</div><div></div><div>a</div><div>b</div>
-<div>B</div><div>imm</div><div>a</div><div>b</div>
+<div>A</div><div>opcode</div><div></div><div>ab</div>
+<div>B</div><div>imm</div><div>ab</div>
 </div>
 </div>
-<p>Type A instructions are further divided into four
+<p>Type B instructions are further divided into four
 groups depending on the two most significant bits of the
 opcode: control flow, arithmetic operations, logic
 operations, and loads and stores.</p>
@@ -96,10 +105,15 @@ operations, and loads and stores.</p>
 <div id="instruction-table">
 <div>Mnem.</div><div>ab</div><div>opcode</div>
 <div>Long name</div>
-<!-- Control flow -->
+<div>lli</div><div>01</div><div>n/a</div>
+<div>Load lower immediate</div>
+<div>lmi</div><div>10</div><div>n/a</div>
+<div>Load middle immediate</div>
+<div>lui</div><div>11</div><div>n/a</div>
+<div>Load upper immediate</div>
 <div>nop</div><div>00</div><div>00000</div>
 <div>No operation</div>
-<div>jump</div><div>00</div><div>00001</div>
+<div><code>jump</code></div><div>00</div><div>00001</div>
 <div>Jump</div>
 <div>br</div><div>00</div><div>00010</div>
 <div>Branch</div>
@@ -111,7 +125,6 @@ operations, and loads and stores.</p>
 <div>(De)allocate</div>
 <div>sys</div><div>00</div><div>00110</div>
 <div>System call</div>
-<!-- Arithmetic operations -->
 <div>add</div><div>00</div><div>01000</div>
 <div>Add</div>
 <div>sub</div><div>00</div><div>01001</div>
@@ -128,7 +141,6 @@ operations, and loads and stores.</p>
 <div>Equal</div>
 <div>less</div><div>00</div><div>01111</div>
 <div>Less than</div>
-<!-- Logic operations -->
 <div>and</div><div>00</div><div>10000</div>
 <div>Bitwise and</div>
 <div>or</div><div>00</div><div>10001</div>
@@ -141,7 +153,6 @@ operations, and loads and stores.</p>
 <div>Shift left logical</div>
 <div>shr</div><div>00</div><div>10101</div>
 <div>Shift right arithmetic</div>
-<!-- Loads and stores -->
 <div>la</div><div>00</div><div>11000</div>
 <div>Load absolute</div>
 <div>lr</div><div>00</div><div>11001</div>
@@ -152,15 +163,8 @@ operations, and loads and stores.</p>
 <div>Store absolute</div>
 <div>sr</div><div>00</div><div>11100</div>
 <div>Store relative</div>
-<div>sc</div><div>00</div><div>11001</div>
+<div>sc</div><div>00</div><div>11101</div>
 <div>Store cart</div>
-<!-- Immediate values -->
-<div>lli</div><div>01</div><div>n/a</div>
-<div>Load lower immediate</div>
-<div>lmi</div><div>10</div><div>n/a</div>
-<div>Load middle immediate</div>
-<div>lui</div><div>11</div><div>n/a</div>
-<div>Load upper immediate</div>
 </div>
 </div>
 <p>The semantics of the various instructions is specified by the
@@ -267,9 +271,9 @@ dec   <span class="meta">←</span> byte id <span class="meta">{</span>num <span
       <span class="meta">|</span> var id
       <span class="meta">|</span> arr id[<span class="meta">{</span>exp<span class="meta">}</span>]
       <span class="meta">|</span> proc id(<span class="meta">{</span>exp<span class="meta">}</span>) block end
-      <span class="meta">|</span> fun id ← id(<span class="meta">{</span>exp<span class="meta">}</span>) block end
-state <span class="meta">←</span> id ← exp
-      <span class="meta">|</span> id[<span class="meta">{</span>exp<span class="meta">}</span>] ← exp
+      <span class="meta">|</span> fun id←id(<span class="meta">{</span>exp<span class="meta">}</span>) block end
+state <span class="meta">←</span> id←exp
+      <span class="meta">|</span> id<span class="meta">(</span>[<span class="meta">{</span>exp<span class="meta">}</span>]<span class="meta">)?</span>←exp
       <span class="meta">|</span> id(<span class="meta">{</span>exp<span class="meta">}</span>)
       <span class="meta">|</span> if exp block <span class="meta">(</span>elif exp block<span class="meta">)*</span>
         <span class="meta">(</span>else block<span class="meta">)?</span> end
@@ -286,7 +290,74 @@ exp   <span class="meta">←</span> num
       <span class="meta">|</span> id(<span class="meta">{</span>exp<span class="meta">}</span>)
 </pre>
 </div>
+<p>Operators in BS use some fancy characters, because a
+programming language doesn’t <em>have</em> to be ugly.</p>
+<div class="display">
+<div id="operator-table">
+<div><code>-a</code></div>
+<div>Minus <code>a</code></div>
+<div><code>~a</code></div>
+<div>Not <code>a</code></div>
+<div><code>a+b</code></div>
+<div><code>a</code> plus <code>b</code></div>
+<div><code>a-b</code></div>
+<div><code>a</code> minus <code>b</code></div>
+<div><code>a×b</code></div>
+<div><code>a</code> times <code>b</code></div>
+<div><code>a÷b</code></div>
+<div>The quotient when <code>a</code> is divided by <code>b</code></div>
+<div><code>b|a</code></div>
+<div>The remainder when <code>a</code> is divided by <code>b</code></div>
+<div><code>a&amp;b</code></div>
+<div><code>a</code> and <code>b</code></div>
+<div><code>a∨b</code></div>
+<div><code>a</code> or <code>b</code></div>
+<div><code>a~b</code></div>
+<div><code>a</code> exclusive or <code>b</code></div>
+<div><code>a«b</code></div>
+<div><code>a</code> shifted left <code>b</code> bits</div>
+<div><code>a»b</code></div>
+<div><code>a</code> shifted right <code>b</code> bits</div>
+<div><code>a&lt;b</code></div>
+<div><code>a</code> less than <code>b</code></div>
+<div><code>a≤b</code></div>
+<div><code>a</code> less than or equal to <code>b</code></div>
+<div><code>a=b</code></div>
+<div><code>a</code> equal to <code>b</code></div>
+<div><code>a≥b</code></div>
+<div><code>a</code> greater than or equal to <code>b</code></div>
+<div><code>a&gt;b</code></div>
+<div><code>a</code> greater than <code>b</code></div>
+<div><code>a≠b</code></div>
+<div><code>a</code> not equal to <code>b</code></div>
 </div>
+</div>
+<ul>
+<li>Exclusive or is denoted by <code>~</code> because fuck it,
+there is no good established notation for it, and it relates to
+not through <code>~a=1~a</code> in a similar fashion at to how
+subtraction relates to negation through <code>-a=0-a</code>,
+but this connection is strenuous at best.</li>
+</ul>
+<p>
+<code>[+-×÷&amp;∨«»]</code> are left associative,
+<code>[×÷]</code> binds tighter than <code>[+-]</code> binds
+tighter than <code>[&lt;≤=≥&gt;≠]</code> and <code>[&amp;]</code>
+binds tighter than <code>[∨]</code>.
+</p>
+<p>
+Variables and arrays are allocated on the stack, while data and
+subroutines are allocated in the cart. The way to create a
+persistent (cart allocated) variable is to use a data
+declaration.
+</p>
+<p>
+Variable as passed by value and arrays are passed by reference.
+If you need a pass-by-reference variable, you may use a 0-rank
+array (<code>arr a[]</code>).
+</p>
+</div>
+
 <div class="column">
 <h1>Badge Integrated Develpment Environment (BadIDE)</h2>
 <p>BadIDE consists of three parts: an editor, a compiler and a

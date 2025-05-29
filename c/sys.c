@@ -9,11 +9,12 @@
 
 #include "extra.h"
 #include "sys.h"
+#include "font.h"
 
 static short bv; /* button vector */
 static short pv; /* press vector */
 static short hv; /* held vector */
-static short fb[9][10]; /* frame buffer */
+static int fb[9]; /* regular frame buffer */
 static long fs; /* frame start */
 
 /* X stuff */
@@ -50,7 +51,7 @@ static void updisp(void)
 {
   for (int i = 0; i < 9; i++) {
     for (int j = 0; j < 10; j++) {
-      XSetForeground(disp, gc, pal[fb[i][j]]);
+      XSetForeground(disp, gc, pal[fb[i] >> 3 * j & 0x7]);
       XFillRectangle(disp, win, gc, 40 * i, 40 * j, 40, 40);
     }
   }
@@ -88,7 +89,7 @@ static void hand(void) {
       case XK_0: case XK_KP_0:             press_( 0); break;
       case XK_minus:           case XK_j:  press_(10); break;
       case XK_equal:           case XK_i:  press_(11); break;
-      case XK_q: printf("exit sys\n"); exit(0);
+      case XK_q: exit(0);
       }
       break;
     case KeyRelease:
@@ -112,9 +113,7 @@ static void hand(void) {
       if (e.xexpose.count == 0) updisp();
       break;
     case ClientMessage:
-      if ((Atom) e.xclient.data.l[0] == del) {
-        printf("exit sys\n"); exit(0);
-      }
+      if ((Atom) e.xclient.data.l[0] == del) exit(0);
       break;
     }
   }
@@ -178,6 +177,37 @@ short rand_(short n) {
   return (rand() & 0xffff) % n;
 }
 
-void draw(short i, short j, short s) { fb[j][i] = s & 0x7; }
+void draw(short i, short j, short s) {
+  fb[j] &= ~(0x7 << 3 * i);
+  fb[j] |= (s & 0x7) << 3 * i;
+}
 short press(short b) { return pv >> b & 0x1; }
 short held(short b) { return hv >> b & 0x1; }
+
+void shift(char b) {
+  for (int i = 0; i < 8; i++) { fb[i] = fb[i + 1]; }
+  fb[8] = 0;
+  for (int i = 0; i < 8; i++) {
+    fb[8] |= 0x7 * (b & 1);
+    b >>= 1;
+    fb[8] <<= 3;
+  }
+  next(10);
+}
+
+void write_(char *s, short n) {
+  int sb[9];
+  for (int i = 0; i < 9; i++) { sb[i] = fb[i]; fb[i] = 0; }
+  for (int i = 0; i < n; i++) {
+    int j;
+    for (j = 0; j < (int) sizeof(fontchar) - 1; j++) {
+      if (s[i] == fontchar[j]) break;
+    }
+    for (int k = fontoff[j]; k < fontoff[j + 1]; k++) {
+      shift(fontdata[k]);
+    }
+    shift(0);
+  }
+  for (int i = 0; i < 8; i++) shift(0);
+  for (int i = 0; i < 9; i++) fb[i] = sb[i];
+}

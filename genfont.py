@@ -14,7 +14,7 @@ off = [0]
 off.append(1)
 for i in range(img.size[0]):
     b = 0
-    for j in reversed(range(8)):
+    for j in range(8):
         b <<= 1
         b |= pix[i, j][0] & 1
     if b: data.append(b)

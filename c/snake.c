@@ -1,12 +1,12 @@
+#include "sys.h"
 #include <stdio.h>
 
-#include "sys.h"
+#define for_(i, n) for (int i = 0; i < n; i++)
 
 static short dir;
 static short dt;
 static short a;
 static short b;
-static short dv;
 static short ft;
 static short grid[10][9];
 static short head[2];

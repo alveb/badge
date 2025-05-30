@@ -133,8 +133,8 @@ operations, and loads and stores.</p>
 <div>Negate</div>
 <div>mul</div><div>00</div><div>01011</div>
 <div>Multiply</div>
-<div>div</div><div>00</div><div>01100</div>
-<div>Divide</div>
+<div>quot</div><div>00</div><div>01100</div>
+<div>Quotient</div>
 <div>rem</div><div>00</div><div>01101</div>
 <div>Reminder</div>
 <div>eq</div><div>00</div><div>01110</div>
@@ -223,14 +223,16 @@ stack.</li>
 [TBD]
 
 <h2>System functions</h2>
-[Order not final.]
 <ol start="0">
-<li>halt() exits the program.</li>
-<li>draw(fb) draws the frame buffer fb on the display. fb is
+<li>exit() exits the program.</li>
+<li>next(dt) sleeps until the next frame, dt cs (centiseconds)
+after the start of the current frame, returning immediately if
+that moment has already passed.</li>
+<li>draw(i, j, s) draws the frame buffer fb on the display. fb is
 assumed to be a 10-by-9 array in row-major order, with a 3-bit
 colour depth. (If you think that’s a lot of wasted bits, you’d
 be right.)</li>
-<li>write(b, n, i) scrolls a text of n words from buffer b across
+<li>write(b, n, f) scrolls a text of n words from buffer b across
 the display. i is a flag indicating whether the message should be
 interruptible by a key press.</li>
 <li>press() returns a bit vector indicating which keys were
@@ -238,16 +240,13 @@ pressed during the previous frame. Keys correspond to bits
 through their labels and indices, so that the key labelled ‘0’
 correspond to bit 0 (the least significant bit), and the key
 labelled ‘b’ correspond to bit 11 (obviously).</li>
-<li>down() returns a bit vector indicating which keys were down
+<li>held() returns a bit vector indicating which keys were down
 during the previous frame. The same correspondence applies.</li>
 <li>send(b, n) sends n words from buffer b though the
 speaker.</li>
 <li>recv(b, n) receives up to n words into buffer b through the
 microphone. It return the actual number of words received.</li>
 <li>rand(n) returns a random number in the range [0, n)</li>
-<li>next(dt) sleeps until the next frame, dt cs (centiseconds)
-after the start of the current frame, returning immediately if
-that moment has already passed.</li>
 </ol>
 </div>
 

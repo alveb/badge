@@ -177,7 +177,9 @@ short rand_(short n) {
   return (rand() & 0xffff) % n;
 }
 
-void draw(short i, short j, short s) {
+void paint(short i, short j, short s) {
+  i %= 10;
+  j %= 9;
   fb[j] &= ~(0x7 << 3 * i);
   fb[j] |= (s & 0x7) << 3 * i;
 }

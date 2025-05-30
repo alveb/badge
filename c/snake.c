@@ -5,8 +5,8 @@
 
 static short dir;
 static short dt;
-static short a;
-static short b;
+static short a; /* speedup countdown */
+static short b; /* speedup interval */
 static short ft;
 static short grid[10][9];
 static short head[2];
@@ -15,7 +15,7 @@ static short weight;
 
 static void clear(void) {
   for_(i, 10) for_(j, 9) {
-    draw(i, j, 0);
+    paint(i, j, 0);
     grid[i][j] = 0;
   }
 }
@@ -23,11 +23,11 @@ static void clear(void) {
 static void flash(void) {
   for_(i, 3) {
     for_(j, 10) for_(k, 9) {
-      draw(j, k, 4 * (grid[j][k] == 0));
+      paint(j, k, 4 * (grid[j][k] == 0));
     }
     next(20);
     for_(j, 10) for_(k, 9) {
-      draw(j, k, 4 * (grid[j][k] != 0));
+      paint(j, k, 4 * (grid[j][k] != 0));
     }
     next(20);
   }
@@ -38,9 +38,9 @@ static void init(void) {
   dt = 20;
   a = 0;
   b = 0;
-  draw(4, 4, 4);
-  draw(5, 4, 4);
-  draw(6, 4, 4);
+  paint(4, 4, 4);
+  paint(5, 4, 4);
+  paint(6, 4, 4);
   ft = 3;
   grid[6][4] = 3;
   grid[7][4] = 2;
@@ -58,7 +58,7 @@ static void loop(void) {
         grid[i][j]--;
         if (!grid[i][j]) {
           len--;
-          draw(i, j, 0);
+          paint(i, j, 0);
         }
       }
     }
@@ -86,7 +86,7 @@ static void loop(void) {
       return;
     }
     grid[head[0]][head[1]] = weight;
-    draw(head[0], head[1], 4);
+    paint(head[0], head[1], 4);
     len++;
     if (ft) {
       ft--;
@@ -101,7 +101,7 @@ static void loop(void) {
           n--;
         }
         grid[0][i] = -1;
-        draw(i / 9, i % 9, 7);
+        paint(i / 9, i % 9, 7);
       }
     }
     next(dt);

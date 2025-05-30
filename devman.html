@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Manual</title>
+<title>Development Manual</title>
 <style>
 /* Typography */
 h1 { font-size: x-large; }
@@ -206,47 +206,60 @@ lui:  sp -= 1; sp[0][15:12] = imm;       sp += 1;
 </div>
 <p>A few notes are in order.</p>
 <ul>
-<li>pc is incremented unless otherwise specified.</li>
-<li>Words should generally be regarded as being signed. This
-applies in particular to mul, div, rem, less and shr.</li>
-<li>Some operations are undefined. [TBD]</li>
-<li>lli, lmi, and lui preform sign extension, which means that
-a single lli cover the range [-32, 32), an lli followed by an lmi
-cover the range [-2 048, 2 048) (including all addresses), and
-finally an lli followed by an lmi followed by an lui cover the
-whole range [-65 536, 65 536).</li>
-<li>allo and lli are the only instructions which grow the
-stack.</li>
+<li><code>pc</code> is incremented as soon as an instruction is
+read.</li>
+<li>Words should be generally regarded as signed. This applies in
+particular to <code>mul</code>, <code>quot</code>,
+<code>rem</code>, <code>less</code> and <code>shr</code>.</li>
+<li>There is not much undefined behaviour. Most operations behave
+as if they were preformed using a larger word size, and then
+truncated. Division by zero is still unreliable, though.</li>
+<li><code>lli</code>, <code>lmi</code>, and <code>lui</code>
+preform sign extension, which means that a single
+<code>lli</code> cover the range [-32, 32), an <code>lli</code>
+followed by an <code>lmi</code> cover the range [-2 048, 2 048)
+(including all addresses), and finally an <code>lli</code>
+followed by an <code>lmi</code> followed by an <code>lui</code>
+cover the whole range [-65 536, 65 536).</li>
+<li><code>allo</code>, <code>lli</code> and <code>call</code> are
+the only instructions which grow the stack.</li>
+<li>Division is Euclidean, which is to say the remainder r will
+always be non-negative, and the quotient q will satisfy the
+equation a = bq + r, where a is the dividend and b the
+divisor.</li>
 </ul>
 
 <h2>Calling convention</h2>
-[TBD]
+<p>Caller pushes arguments from left to right on the stack. If a
+return value is expected, a slot is cleared immediately
+before the arguments. Caller deallocates arguments after
+return.</p>
 
 <h2>System functions</h2>
 <ol start="0">
-<li>exit() exits the program.</li>
-<li>next(dt) sleeps until the next frame, dt cs (centiseconds)
-after the start of the current frame, returning immediately if
-that moment has already passed.</li>
-<li>draw(i, j, s) draws the frame buffer fb on the display. fb is
-assumed to be a 10-by-9 array in row-major order, with a 3-bit
-colour depth. (If you think that’s a lot of wasted bits, you’d
-be right.)</li>
-<li>write(b, n, f) scrolls a text of n words from buffer b across
-the display. i is a flag indicating whether the message should be
+<li><code>exit()</code> exits the program.</li>
+<li><code>next(d)</code> sleeps until the next frame,
+<code>d</code> centiseconds after the start of the current frame,
+returning immediately if that moment has already passed.</li>
+<li><code>paint(i, j, s)</code> fills the <code>ij</code>th
+picture element with shade <code>s</code>, which has a 3-bit
+depth.</li>
+<li><code>write(b, n, f)</code> scrolls a text of <code>n</code>
+words from buffer <code>b</code> across the display.
+<code>f</code> is a flag indicating whether the message should be
 interruptible by a key press.</li>
-<li>press() returns a bit vector indicating which keys were
-pressed during the previous frame. Keys correspond to bits
-through their labels and indices, so that the key labelled ‘0’
-correspond to bit 0 (the least significant bit), and the key
-labelled ‘b’ correspond to bit 11 (obviously).</li>
-<li>held() returns a bit vector indicating which keys were down
-during the previous frame. The same correspondence applies.</li>
-<li>send(b, n) sends n words from buffer b though the
-speaker.</li>
-<li>recv(b, n) receives up to n words into buffer b through the
-microphone. It return the actual number of words received.</li>
-<li>rand(n) returns a random number in the range [0, n)</li>
+<li><code>press(b)</code> returns whether button <code>b</code>
+was ever pressed during the previous frame. Buttons are numbered
+by their labels, with A = 10 and B = 11 (obviously).</li>
+<li><code>held(b)</code> returns whether button <code>b</code>
+was ever down during the previous frame.</li>
+<li><code>send(b, n)</code> sends <code>n</code> words from
+buffer <code>b</code> though the speaker.</li>
+<li><code>recv(b, n)</code> receives up to <code>n</code> words
+into buffer <code>b</code> through the microphone. The actual
+number of words received is returned.</li>
+<li><code>rand(n)</code> returns a random number in the range [0,
+<code>n</code>)</li>
 </ol>
 </div>
 

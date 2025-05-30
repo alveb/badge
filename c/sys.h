@@ -1,8 +1,7 @@
-#define for_(i, n) for (int i = 0; i < n; i++)
-
+void exit_(void) __attribute__((noreturn));
 short held(short);
 short press(short);
 short rand_(short);
-void draw(short, short, short);
-void halt(void) __attribute__((noreturn));
+void paint(short, short, short);
 void next(short);
+void write_(char *, short);

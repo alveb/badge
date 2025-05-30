@@ -105,7 +105,7 @@ void run(char *bc) {
       case sub:  *a = (int) *a - (int) *b;    sp -= 1; break;
       case neg:  *b = -(int) *b; sp++;                 break;
       case mul:  *a = (int) *a * (int) *b;    sp -= 1; break;
-      case div:  *a = divmod(*a, *b, div);    sp -= 1; break;
+      case quot  *a = divmod(*a, *b, div);    sp -= 1; break;
       case rem:  *a = divmod(*a, *b, mod);    sp -= 1; break;
       case eq:   *a = (*a == *b);             sp -= 1; break;
       case less: *a = (*a < *b);              sp -= 1; break;

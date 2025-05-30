@@ -244,10 +244,11 @@ returning immediately if that moment has already passed.</li>
 <li><code>paint(i, j, s)</code> fills the <code>ij</code>th
 picture element with shade <code>s</code>, which has a 3-bit
 depth.</li>
-<li><code>write(b, n, f)</code> scrolls a text of <code>n</code>
-words from buffer <code>b</code> across the display.
-<code>f</code> is a flag indicating whether the message should be
-interruptible by a key press.</li>
+<li><code>write(b, n, f)</code> scrolls a message of length
+<code>n</code> from buffer <code>b</code> across the display.
+<code>f</code> is a flag indicating whether the message should
+read from memory or cart (bit 0, cart being 0 and memory 1), and
+whether the message be interruptible by a key press (bit 1).</li>
 <li><code>press(b)</code> returns whether button <code>b</code>
 was ever pressed during the previous frame. Buttons are numbered
 by their labels, with A = 10 and B = 11 (obviously).</li>

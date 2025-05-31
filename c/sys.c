@@ -194,7 +194,7 @@ void shift(char b) {
     b >>= 1;
     fb[8] <<= 3;
   }
-  next(10);
+  next(10); /* not quite proper */
 }
 
 void write_(char *s, short n) {

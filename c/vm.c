@@ -1,24 +1,26 @@
 /* Untested! */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 enum {
-  nop, jump, br, call, ret, allo, sys,
-  add = 16, sub, neg, mul, div, rem, eq, less,
-  and, or, not, xor, shl, shr,
-  la = 48, lr, lc, sa, sr, sc,
+  nop =  0, jump, br,  call, ret, allo, sys,
+  add = 16, sub,  neg, mul,  quot, rem,  eq,  less,
+  and = 32, or,   not, xor,  shl, shr,
+  la  = 48, lr,   lc,  sa,   sr,  sc,
 };
 
 enum {
   lli = 1, lmi, lui,
 };
 
-enum {
-  halt,
-};
-
 int fd;
 void *map;
 short mem[512];
-unsigned int pc, sp, fp;
+unsigned short pc, sp, fp;
 short *cart;
 unsigned char *code;
 
@@ -47,25 +49,24 @@ static void init(char *bc) {
 }
 
 static inline void swap(short *a, short *b) {
-  short *t = *a; *a = *b; *b = t;
+  short t = *a; *a = *b; *b = t;
 }
 
 static inline void syscall(int n) {
   switch (n) {
-  case halt:
-    printf("exit vm\n");
-    exit(1);
+  case 0: exit(0);
   }
 }
 
-static inline int divmod(int a, int b, int i) {
-  if (!b) return = rand();
+static inline short quotrem(int a, int b, int i) {
+  if (!b) return rand();
   int r = a % b;
-  int i = (r < 0) * ((b > 0) - (b < 0));
+  int j = (r < 0) * ((b > 0) - (b < 0));
   switch (i) {
-  case div: return a / b - i;
-  case rem: return r + i * b;
+  case quot: return a / b - j;
+  case rem:  return r + j * b;
   }
+  exit(1);
 }
 
 static inline int shift(int a, int b, int i) {
@@ -75,6 +76,7 @@ static inline int shift(int a, int b, int i) {
   case shl: return a * (1 << b);
   case shr: return a / (1 << b);
   }
+  exit(1);
 }
 
 void run(char *bc) {
@@ -85,19 +87,19 @@ void run(char *bc) {
     short *b = &mem[(sp - 1) & 0x1ff];
     short *c = &mem[(sp - 0) & 0x1ff];
     if (i & 0x3) {
-      int n = (signed char) i / 0x4;
+      int imm = (signed char) i / 0x4;
       switch (i & 0x3) {
-      case lli: *c = n;                       sp += 1; break;
-      case lmi: *b = (n * 0x40) | (*b & 0x3f);         break;
-      case lui: *b = (n * 0x1000) | (*b & 0xfff);      break;
+      case lli: *c = imm;                     sp += 1; break;
+      case lmi: *b = (imm * 0x40) | (*b & 0x3f);       break;
+      case lui: *b = (imm * 0x1000) | (*b & 0xfff);    break;
       }
     } else {
       switch (i >> 3) {
       case nop:                                        break;
       case jump: pc = *b;                     sp -= 1; break;
       case br:   if (*a) pc = *b;             sp -= 2; break;
-      case call: swap(*b, &pc);
-                 fp = (*c = fp) - mem;        sp += 1; break;
+      case call: swap(b, (short *)&pc);
+                 *c = fp; fp = c - mem;       sp += 1; break;
       case ret:  pc = *a; fp = *b; sp--;      sp -= 2; break;
       case allo: sp += *b;                    sp -= 1; break;
       case sys:  syscall(*b);                 sp -= 1; break;
@@ -105,8 +107,8 @@ void run(char *bc) {
       case sub:  *a = (int) *a - (int) *b;    sp -= 1; break;
       case neg:  *b = -(int) *b; sp++;                 break;
       case mul:  *a = (int) *a * (int) *b;    sp -= 1; break;
-      case quot  *a = divmod(*a, *b, div);    sp -= 1; break;
-      case rem:  *a = divmod(*a, *b, mod);    sp -= 1; break;
+      case quot: *a = quotrem(*a, *b, quot);  sp -= 1; break;
+      case rem:  *a = quotrem(*a, *b, rem);   sp -= 1; break;
       case eq:   *a = (*a == *b);             sp -= 1; break;
       case less: *a = (*a < *b);              sp -= 1; break;
       case and:  *a = *a & *b;                sp -= 1; break;
